@@ -1,7 +1,7 @@
 import random
 import math
-import open3d as o3d
-from tqdm import tqdm
+import open3d as o3d  # type: ignore
+from tqdm import tqdm # type: ignore
 import numpy as np
 
 class RANSAC:

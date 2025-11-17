@@ -12,7 +12,7 @@ import os
 import glob
 from typing import Tuple, Dict
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from tqdm import tqdm # pyright: ignore[reportMissingModuleSource]
 import matplotlib as mpl
 import torch
 from U_Net.U_Net import UNet
@@ -495,7 +495,7 @@ def main():
     DATE = '2011_09_26'  # Date folder
     DRIVE = '0005'  # Drive number (with leading zeros)
     CAMERA = 'image_02' # From which camera take the pictures
-    FRAME_IDX = 87  # Which frame to process
+    FRAME_IDX = 129  # Which frame to process
     IMAGE_NET_PATH = './U_Net'
     
     print("="*60)
@@ -573,7 +573,7 @@ def main():
     fused_mask = segmenter.fuse_segmentations(
         lidar_mask,
         camera_mask,
-        lidar_weight=0.5
+        lidar_weight=0.6
     )
     
     # Visualize
