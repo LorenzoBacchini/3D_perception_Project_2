@@ -41,7 +41,6 @@ class KITTIDataLoader:
         self.velodyne_files = sorted(glob.glob(os.path.join(
             self.drive_path, "velodyne_points", "data", "*.bin")))
         
-        print(f"camera_{self.camera}")
         print(f"Loaded KITTI dataset:")
         print(f"  Date: {date}")
         print(f"  Drive: {drive}")

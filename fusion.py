@@ -26,8 +26,7 @@ from tqdm import tqdm # pyright: ignore[reportMissingModuleSource]
         fused_mask: Combined segmentation mask
 """
 def fuse_segmentations(lidar_mask: np.ndarray,
-                        camera_mask: np.ndarray,
-                        lidar_weight: float = 0.6) -> np.ndarray:
+                        camera_mask: np.ndarray) -> np.ndarray:
     # Normalize masks
     lidar_evidence = lidar_mask.astype(np.float32) / 255.0
     camera_evidence = camera_mask.astype(np.float32) / 255.0
@@ -35,12 +34,18 @@ def fuse_segmentations(lidar_mask: np.ndarray,
     # Apply Gaussian smoothing to LiDAR mask for better coverage
     lidar_evidence = cv2.GaussianBlur(lidar_evidence, (21, 21), 0)
     
+    # Apply a smooth weighting based on the distance to the ego vehicle
+    H = camera_evidence.shape[0]
+    y = np.arange(H).reshape(H, 1)
+    lidar_weight_map = y / (H - 1)
+    lidar_weight_map = np.repeat(lidar_weight_map, camera_evidence.shape[1], axis=1)
+    
     # Normalize after blur
     if lidar_evidence.max() > 0:
         lidar_evidence = lidar_evidence / lidar_evidence.max()
     
     # Weighted fusion
-    fused = lidar_weight * lidar_evidence + (1 - lidar_weight) * camera_evidence
+    fused = lidar_weight_map * lidar_evidence + (1 - lidar_weight_map) * camera_evidence
     
     # Threshold
     fused_mask = (fused > 0.4).astype(np.uint8) * 255
@@ -61,7 +66,7 @@ def main():
     DATE = '2011_09_26'  # Date folder
     DRIVE = '0005'  # Drive number (with leading zeros)
     CAMERA = 'image_02' # From which camera take the pictures
-    FRAME_IDX = 130  # Which frame to process
+    FRAME_IDX = 110  # Which frame to process
     IMAGE_NET_PATH = './U_Net'
     
     print("="*60)
@@ -105,7 +110,7 @@ def main():
     ground_points = np.sum(ground_mask)
     print(f"   Ground points: {ground_points}/{len(ground_mask)} ({100*ground_points/len(ground_mask):.1f}%)")
     
-    # Match ground mask with projected points using indices
+    # Match ground mask with projected points using pre-computed valid indices
     print("\n5. Mapping ground mask to projected points...")
     ground_mask_projected = ground_mask[valid_indices]
     print(f"   Projected ground points: {np.sum(ground_mask_projected)}/{len(ground_mask_projected)} ({100*np.sum(ground_mask_projected)/len(ground_mask_projected):.1f}%)")
@@ -126,8 +131,7 @@ def main():
     print("\n8. Fusing LiDAR and camera segmentations...")
     fused_mask = fuse_segmentations(
         lidar_mask,
-        camera_mask,
-        lidar_weight=0.7
+        camera_mask
     )
 
     fu.visualize_comparison(frame['image'], lidar_mask, camera_mask, fused_mask, pixel_coords, depths)
